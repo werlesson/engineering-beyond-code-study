@@ -48,10 +48,13 @@ class ConcurrentBookingTest extends TestCase
 
     protected function tearDown(): void
     {
-        $this->tearDownConcurrencyScenario();
-        DB::purge(self::ORCHESTRATOR_CONNECTION);
+        try {
+            $this->tearDownConcurrencyScenario();
+        } finally {
+            DB::purge(self::ORCHESTRATOR_CONNECTION);
 
-        parent::tearDown();
+            parent::tearDown();
+        }
     }
 
     public function test_only_one_of_five_simultaneous_overlapping_bookings_is_confirmed(): void

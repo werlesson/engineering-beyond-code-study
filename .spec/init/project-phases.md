@@ -577,12 +577,16 @@ Todos os testes de feature desta phase usam `RefreshDatabase`, `freezeClock()` e
     - `ConcurrentBookingTest::test_only_one_of_five_simultaneous_overlapping_bookings_is_confirmed`.
   - **Traces:** US-2.2 · workflow 2 · `bookings` · `professional_service`
 
-- [ ] **Task:** Execução isolada do grupo de concorrência.
+- [ ] **Task:** Garantir que o grupo de concorrência roda isolado e não deixa resíduos.
   - **Acceptance criteria:**
-    - `php artisan test --group=concurrency` roda só os testes de concorrência (Action, Phase 5.2, e HTTP, Phase 5.3) e passa.
-    - `php artisan test` (sem `--parallel`) roda a suíte inteira, incluindo o grupo de concorrência, e passa.
-    - Depois da suíte completa, nenhum dado da empresa `concurrency-*` permanece em `agendamento_testing`, e nenhum processo `artisan serve` ou worker continua vivo.
-    - `php artisan test --group=concurrency` passa 5 vezes seguidas, sem flakiness.
+    - Todos os critérios são verificáveis no código ou pela suíte do Gate 2 (`composer test`). Repetições manuais de execução não são critério desta task.
+    - `phpunit.xml` **não** exclui o grupo `concurrency`. Assim, `composer test`/`php artisan test` roda a suíte inteira com os testes de concorrência, e o Gate 2 verde comprova que eles passam.
+    - `ConcurrentBookingTest` e `ConcurrentBookingHttpTest` têm `#[Group('concurrency')]` e falham com mensagem explicativa se `ParallelTesting::token()` estiver definido.
+    - Limpeza de dados:
+      - o `setUp()` dos dois testes remove sobras `concurrency-*`;
+      - o `tearDown()` apaga os dados da empresa criada;
+      - os dois passos são guardados por `assertSafeTestDatabase()`.
+    - Limpeza de processos: o pool de workers e o `TestHttpServer::stop()` são encerrados em `finally`/`tearDown`, então nenhum código deixa processo vivo após o teste.
   - **Traces:** US-2.2 · workflow 2
 
 ### Phase 5.3: Concorrência HTTP ponta a ponta
@@ -681,8 +685,9 @@ O teste da Phase 5.2 prova a camada de negócio e a constraint. Este prova o flu
 
 - [ ] **Task:** Verificação final de rastreabilidade e da suíte.
   - **Acceptance criteria:**
-    - `php artisan test` roda a suíte completa, verde, contra `agendamento_testing`.
-    - Cada critério de aceitação de US-1.1, US-1.2, US-1.3, US-2.1, US-2.2, US-3.1, US-3.2, US-4.1 e US-5.1 em `.spec/init/user-stories.md` corresponde a pelo menos um teste nomeado nesta spec. Uma tabela de checklist critério → teste é anexada ao README ou ao PR final.
+    - A suíte completa verde contra `agendamento_testing` é comprovada pelo Gate 2 (`composer test`).
+    - O README documenta a checagem manual de estabilidade: `for i in 1 2 3 4 5; do php artisan test --group=concurrency || break; done`. Não é critério verificável automaticamente.
+    - Cada critério de aceitação de US-1.1, US-1.2, US-1.3, US-2.1, US-2.2, US-3.1, US-3.2, US-4.1 e US-5.1 em `.spec/init/user-stories.md` corresponde a pelo menos um teste nomeado nesta spec. A tabela de checklist critério → teste fica no arquivo `docs/traceability.md`.
     - `.spec/init/user-stories.md` tem o status de todas as histórias atualizado de `Pending` para `Done`.
   - **Traces:** US-1.1 · US-1.2 · US-1.3 · US-2.1 · US-2.2 · US-3.1 · US-3.2 · US-4.1 · US-5.1
 

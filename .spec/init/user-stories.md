@@ -194,12 +194,12 @@
 
 | ID | Story | Priority | Status |
 |----|-------|----------|--------|
-| US-1.1 | Criar um agendamento válido | High | Pending |
-| US-2.1 | Impedir agendamentos sobrepostos do mesmo profissional | High | Pending |
-| US-2.2 | Garantir uma única reserva sob requisições concorrentes | High | Pending |
-| US-3.1 | Exigir autenticação | High | Pending |
-| US-3.2 | Impedir uso de recursos de outra empresa | High | Pending |
-| US-1.2 | Validar o payload do agendamento | High | Pending |
-| US-4.1 | Popular dados de demonstração com tokens | Medium | Pending |
-| US-1.3 | Calcular o término pelo serviço | High | Pending |
-| US-5.1 | Proteger as invariantes no banco | High | Pending |
+| US-1.1 | Criar um agendamento válido | High | Done |
+| US-2.1 | Impedir agendamentos sobrepostos do mesmo profissional | High | Done |
+| US-2.2 | Garantir uma única reserva sob requisições concorrentes | High | Done |
+| US-3.1 | Exigir autenticação | High | Done |
+| US-3.2 | Impedir uso de recursos de outra empresa | High | Done |
+| US-1.2 | Validar o payload do agendamento | High | Done |
+| US-4.1 | Popular dados de demonstração com tokens | Medium | Done |
+| US-1.3 | Calcular o término pelo serviço | High | Done |
+| US-5.1 | Proteger as invariantes no banco | High | Done |

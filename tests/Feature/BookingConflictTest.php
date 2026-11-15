@@ -12,7 +12,9 @@ use App\Models\Service;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Closure;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Testing\TestResponse;
 use Laravel\Sanctum\Sanctum;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -86,6 +88,21 @@ class BookingConflictTest extends TestCase
             ->assertExactJson(['message' => 'O profissional já possui um agendamento nesse horário.']);
     }
 
+    /**
+     * Caminho defensivo da CreateBooking: um insert sem árbitro na constraint lançaria a 23P01
+     * real do PostgreSQL, e ela também precisa virar 409.
+     */
+    public function test_exclusion_violation_raised_by_database_returns_409(): void
+    {
+        $this->existingBooking();
+        $exclusionViolation = $this->captureExclusionViolation();
+        $this->assertSame('23P01', $exclusionViolation->errorInfo[0] ?? null);
+
+        $this->throwOnNextBookingInsert($exclusionViolation);
+
+        $this->assertConflict(fn (): TestResponse => $this->postBooking($this->scenario['service'], 14, 0));
+    }
+
     public function test_adjacent_intervals_return_201(): void
     {
         $this->existingBooking();
@@ -139,6 +156,42 @@ class BookingConflictTest extends TestCase
             ->for($this->scenario['professional'], $this->scenario['service'], $this->scenario['customer'])
             ->startingAt($this->tomorrowAt(14, 0))
             ->create(['status_id' => $status]);
+    }
+
+    /**
+     * Insere direto (sem ON CONFLICT) um booking idêntico ao existente, dentro de um savepoint,
+     * e devolve a QueryException 23P01 lançada pela exclusion constraint.
+     */
+    private function captureExclusionViolation(): QueryException
+    {
+        $overlapping = Booking::factory()
+            ->for($this->scenario['professional'], $this->scenario['service'], $this->scenario['customer'])
+            ->startingAt($this->tomorrowAt(14, 0))
+            ->make();
+
+        try {
+            DB::transaction(fn (): bool => DB::table('bookings')->insert($overlapping->getAttributes()));
+        } catch (QueryException $exception) {
+            return $exception;
+        }
+
+        $this->fail('Expected the exclusion constraint to reject the overlapping insert.');
+    }
+
+    /**
+     * Faz o próximo insert em bookings lançar a exceção dada no lugar de ir ao banco, uma única vez.
+     */
+    private function throwOnNextBookingInsert(QueryException $exception): void
+    {
+        $pending = true;
+
+        DB::connection()->beforeExecuting(function (string $query) use (&$pending, $exception): void {
+            if ($pending && str_starts_with($query, 'insert into "bookings"')) {
+                $pending = false;
+
+                throw $exception;
+            }
+        });
     }
 
     /**

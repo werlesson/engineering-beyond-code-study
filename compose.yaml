@@ -1,0 +1,22 @@
+services:
+  pgsql:
+    image: postgres:18-alpine
+    container_name: agendamento-pgsql
+    restart: unless-stopped
+    ports:
+      - "${FORWARD_DB_PORT:-5435}:5432"
+    environment:
+      POSTGRES_DB: "${DB_DATABASE:-agendamento}"
+      POSTGRES_USER: "${DB_USERNAME:-agendamento}"
+      POSTGRES_PASSWORD: "${DB_PASSWORD:-secret}"
+    volumes:
+      # Postgres 18+ guarda os dados em /var/lib/postgresql/<versão>/docker
+      - pgsql-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  pgsql-data:

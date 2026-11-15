@@ -1,0 +1,12 @@
+{
+    "mcpServers": {
+        "laravel-boost": {
+            "command": "wsl.exe",
+            "args": [
+                "/home/werlesson/.config/herd-lite/bin/php",
+                "/home/werlesson/werlesson/engineering-beyond-code-study/agendamento/artisan",
+                "boost:mcp"
+            ]
+        }
+    }
+}
